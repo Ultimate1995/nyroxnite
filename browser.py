@@ -10,8 +10,14 @@ Updater: Die EXE lädt diese Datei bei jedem Start neu. Wird browser.py verände
          offene Tabs bleiben dabei erhalten.
 """
 
-VERSION = "2.5.0"
+VERSION = "2.6.0"
 CHANGELOG = {
+    "2.6.0": [
+        "Schneller: Tabs im Hintergrund schlafen nach 5 Minuten (spart CPU und Arbeitsspeicher)",
+        "Kein Ruckeln mehr durch Speichern oder Update-Prüfung während des Surfens",
+        "GPU-Rasterung und größerer Cache für flüssigeres Scrollen und schnelleres Laden",
+        "Neue Einstellung: Inaktive Tabs schlafen legen",
+    ],
     "2.5.0": [
         "Neues Design im Opera-Stil mit Seitenleiste links",
         "Schnellzugriff: WhatsApp, Discord, Instagram, Spotify, YouTube und Twitch als Seitenfenster",
@@ -168,6 +174,7 @@ DEFAULT_CONFIG = {
     "hardware_accel": True,
     "running": False,
     "crash_count": 0,
+    "sleep_tabs": True,
 }
 
 
@@ -191,11 +198,22 @@ class Config:
         self.save()
 
     def save(self):
+        if getattr(self, "_timer", None) is not None:
+            self._timer.stop()
         self.data["history"] = self.data.get("history", [])[-5000:]
         try:
-            CONFIG_FILE.write_text(json.dumps(self.data, ensure_ascii=False, indent=1), encoding="utf-8")
+            tmp = CONFIG_FILE.with_suffix(".tmp")
+            tmp.write_text(json.dumps(self.data, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+            os.replace(tmp, CONFIG_FILE)
         except Exception:
             pass
+
+    def save_later(self):
+        """Fasst viele Änderungen zu einem Schreibvorgang zusammen (kein Ruckeln beim Surfen)."""
+        if getattr(self, "_timer", None) is None:
+            self._timer = QTimer(singleShot=True, interval=3000)
+            self._timer.timeout.connect(self.save)
+        self._timer.start()
 
 
 CFG = Config()
@@ -579,6 +597,7 @@ class Updater(QObject):
         local = os.environ.get("NYROX_LOCAL_SOURCE")
         if local and Path(local).resolve() != APP_FILE and Path(local).exists():
             self.paths.append(Path(local).resolve())
+        self.stats = {p: self._stat(p) for p in self.paths}
         self.watcher = QFileSystemWatcher(self)
         for p in self.paths:
             self.watcher.addPath(str(p))
@@ -596,11 +615,23 @@ class Updater(QObject):
             QTimer.singleShot(5000, lambda: self.check_online(False))
 
     # ---------- lokal
+    @staticmethod
+    def _stat(p):
+        try:
+            st = p.stat()
+            return (st.st_mtime_ns, st.st_size)
+        except Exception:
+            return None
+
     def check(self, manual=False):
         for p in self.paths:
             if p.exists() and str(p) not in self.watcher.files():
                 self.watcher.addPath(str(p))
         for p in self.paths:
+            st = self._stat(p)
+            if not manual and st == self.stats.get(p):
+                continue                           # Datei unverändert -> nichts tun (spart Rechenzeit)
+            self.stats[p] = st
             try:
                 raw = p.read_bytes()
                 src = raw.decode("utf-8")
@@ -692,7 +723,8 @@ def save_all_sessions():
             u = w.tabs.widget(i).url()
             if u.isValid() and not u.isEmpty() and not is_newtab(u):
                 urls.append(u.toString())
-    CFG["session"] = urls
+    CFG.data["session"] = urls
+    CFG.save_later()
 
 
 _session_timer = None
@@ -1129,6 +1161,8 @@ class SettingsDialog(QDialog):
         self.sess.setChecked(CFG["restore_session"])
         self.gpu = QCheckBox("Hardwarebeschleunigung verwenden (aus = stabiler, Neustart nötig)")
         self.gpu.setChecked(CFG["hardware_accel"])
+        self.sleep = QCheckBox("Inaktive Tabs schlafen legen (spart Leistung)")
+        self.sleep.setChecked(CFG["sleep_tabs"])
         dlrow = QHBoxLayout()
         self.dldir = QLineEdit(CFG["download_dir"])
         pick = QPushButton("Ändern")
@@ -1140,7 +1174,7 @@ class SettingsDialog(QDialog):
         f.addRow("Akzentfarbe", self.accent)
         f.addRow("Downloads", dlrow)
         outer.addLayout(f)
-        for w in (self.dark, self.darkweb, self.ad, self.pop, self.js, self.sess, self.gpu):
+        for w in (self.dark, self.darkweb, self.ad, self.pop, self.js, self.sess, self.gpu, self.sleep):
             outer.addWidget(w)
         bb = QDialogButtonBox(QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel)
         bb.button(QDialogButtonBox.StandardButton.Save).setText("Speichern")
@@ -1161,6 +1195,7 @@ class SettingsDialog(QDialog):
                         force_dark_web=self.darkweb.isChecked(), adblock=self.ad.isChecked(),
                         block_popups=self.pop.isChecked(), javascript=self.js.isChecked(),
                         restore_session=self.sess.isChecked(), download_dir=self.dldir.text())
+        CFG.data["sleep_tabs"] = self.sleep.isChecked()
         gpu_changed = self.gpu.isChecked() != bool(CFG["hardware_accel"])
         CFG.data["hardware_accel"] = self.gpu.isChecked()
         CFG.save()
@@ -1257,6 +1292,8 @@ def get_profile(private):
             p.setPersistentStoragePath(str(DATA_DIR / "storage"))
             p.setCachePath(str(DATA_DIR / "cache"))
             p.setPersistentCookiesPolicy(QWebEngineProfile.PersistentCookiesPolicy.AllowPersistentCookies)
+            p.setHttpCacheType(QWebEngineProfile.HttpCacheType.DiskHttpCache)
+            p.setHttpCacheMaximumSize(512 * 1024 * 1024)   # 512 MB Cache -> Seiten laden schneller
         # "QtWebEngine" aus der Kennung entfernen – sonst lehnen WhatsApp Web & Co. den Browser ab
         p.setHttpUserAgent(re.sub(r"\s*QtWebEngine/\S+", "", p.httpUserAgent()))
         p._blocker = AdBlocker()
@@ -1367,6 +1404,11 @@ class BrowserWindow(QMainWindow):
         self.build_menu()
         self.logo_btn.setMenu(self.main_menu)
         self.build_shortcuts()
+        self.completer_timer = QTimer(self, singleShot=True, interval=1500)
+        self.completer_timer.timeout.connect(self.update_completer)
+        self.sleep_timer = QTimer(self, interval=30_000)
+        self.sleep_timer.timeout.connect(self.sleep_inactive_tabs)
+        self.sleep_timer.start()
         self.refresh_icons()
         if private:
             self.toast("Privates Fenster – Verlauf, Cookies und Cache werden nicht gespeichert.")
@@ -1867,6 +1909,7 @@ class BrowserWindow(QMainWindow):
 
     def add_tab(self, url=None, background=False, load=True):
         v = WebView(self)
+        v.last_active = time.monotonic()
         self.apply_web_settings(v)
         i = self.tabs.addTab(v, "Neuer Tab")
         self.tabs.setTabIcon(i, logo_icon())
@@ -2006,8 +2049,8 @@ class BrowserWindow(QMainWindow):
                     hist[-1] = entry
                 else:
                     hist.append(entry)
-                CFG.save()
-                self.update_completer()
+                CFG.save_later()
+                self.completer_timer.start()
         if v is not self.view():
             return
         self.loading = started
@@ -2016,10 +2059,50 @@ class BrowserWindow(QMainWindow):
         self.reload_btn.setToolTip("Laden stoppen" if started else "Neu laden (F5)")
         self.update_nav()
 
+    def sleep_inactive_tabs(self):
+        """Tabs, die länger nicht benutzt wurden, einfrieren (5 Min.) bzw. entladen (30 Min.)."""
+        if not CFG["sleep_tabs"]:
+            return
+        L = QWebEnginePage.LifecycleState
+        now = time.monotonic()
+        cur = self.view()
+        for i in range(self.tabs.count()):
+            v = self.tabs.widget(i)
+            if v is cur:
+                continue
+            page = v.page()
+            try:
+                if page.recentlyAudible() or page.recommendedState() == L.Active:
+                    continue
+                idle = now - getattr(v, "last_active", now)
+                if idle > 1800 and page.lifecycleState() != L.Discarded:
+                    page.setLifecycleState(L.Discarded)
+                elif idle > 300 and page.lifecycleState() == L.Active:
+                    page.setLifecycleState(L.Frozen)
+            except Exception:
+                pass
+
+    def wake_tab(self, v):
+        try:
+            page = v.page()
+            if page.lifecycleState() != QWebEnginePage.LifecycleState.Active:
+                page.setLifecycleState(QWebEnginePage.LifecycleState.Active)
+        except Exception:
+            pass
+
     def on_tab_changed(self, _i):
         v = self.view()
         if not v:
             return
+        prev = getattr(self, "_prev_view", None)
+        if prev is not None and prev is not v:
+            try:
+                prev.last_active = time.monotonic()
+            except RuntimeError:
+                pass
+        self._prev_view = v
+        v.last_active = time.monotonic()
+        self.wake_tab(v)
         self.loading = False
         self.loadbar.setValue(0)
         self.reload_btn.setIcon(make_icon("reload", theme()["text"]))
@@ -2157,7 +2240,7 @@ class BrowserWindow(QMainWindow):
                     CFG.data["zoom"].pop(host, None)
                 else:
                     CFG.data["zoom"][host] = f
-                CFG.save()
+                CFG.save_later()
 
     def update_zoom_label(self):
         v = self.view()
@@ -2257,6 +2340,8 @@ class BrowserWindow(QMainWindow):
             s.setAttribute(A.ScreenCaptureEnabled, True)
             s.setAttribute(A.PlaybackRequiresUserGesture, False)
             s.setAttribute(A.LocalContentCanAccessRemoteUrls, True)
+            if hasattr(A, "DnsPrefetchEnabled"):
+                s.setAttribute(A.DnsPrefetchEnabled, True)
             if hasattr(A, "ForceDarkMode"):
                 s.setAttribute(A.ForceDarkMode, bool(CFG["force_dark_web"]))
 
@@ -2318,8 +2403,10 @@ def main():
             switched_safe = True
     CFG.data["running"] = True
     CFG.save()
-    if not CFG["hardware_accel"]:
-        flags = os.environ.get("QTWEBENGINE_CHROMIUM_FLAGS", "")
+    flags = os.environ.get("QTWEBENGINE_CHROMIUM_FLAGS", "")
+    if CFG["hardware_accel"]:
+        os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = (flags + " --enable-gpu-rasterization --enable-zero-copy").strip()
+    else:
         os.environ["QTWEBENGINE_CHROMIUM_FLAGS"] = (flags + " --disable-gpu --disable-gpu-compositing").strip()
         if QApplication.instance() is None:
             QApplication.setAttribute(Qt.ApplicationAttribute.AA_UseSoftwareOpenGL)
