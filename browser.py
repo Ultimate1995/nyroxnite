@@ -10,8 +10,14 @@ Updater: Die EXE lädt diese Datei bei jedem Start neu. Wird browser.py verände
          offene Tabs bleiben dabei erhalten.
 """
 
-VERSION = "2.6.1"
+VERSION = "2.7.0"
 CHANGELOG = {
+    "2.7.0": [
+        "Neues Design im Stil von Opera GX: Tabs in der Titelleiste, eigene Fensterknöpfe",
+        "Lesezeichenleiste mit Seiten-Symbolen",
+        "Konto erstellen: Name, Profilbild und Passwort-Sperre",
+        "Persönliche Begrüßung auf der Startseite",
+    ],
     "2.6.1": [
         "Neuer Name: NyroxNite Browser by Tobias",
     ],
@@ -112,6 +118,7 @@ CONFIG_FILE = DATA_DIR / "config.json"
 NEWTAB_FILE = DATA_DIR / "newtab.html"
 LOG_FILE = DATA_DIR / "fehler.log"
 CRASH_FILE = DATA_DIR / "absturz.log"
+AVATAR_FILE = DATA_DIR / "avatar.png"
 
 SEARCH_ENGINES = {
     "Google": "https://www.google.com/search?q={}",
@@ -129,7 +136,7 @@ AD_HOSTS = {
 }
 
 ACCENTS = {
-    "Opera-Rot": ("#ff1b2d", "#ff5a6a"),
+    "Opera-Rot": ("#fa1e4e", "#ff5c7c"),
     "Indigo": ("#6366f1", "#8b5cf6"),
     "Blau": ("#2563eb", "#0ea5e9"),
     "Grün": ("#059669", "#14b8a6"),
@@ -139,8 +146,8 @@ ACCENTS = {
 
 LIGHT = dict(bg="#eceef3", surface="#ffffff", field="#f1f3f6", hover="#e5e7ed", pressed="#d9dce4",
              border="#e1e4ea", border2="#c7ccd6", text="#1d2129", muted="#6b7280", warn="#e11d48")
-DARK = dict(bg="#121317", surface="#1e1f24", field="#2a2b31", hover="#303139", pressed="#3a3c45",
-            border="#2c2e35", border2="#4a4d58", text="#e8e9ee", muted="#9ca3af", warn="#fb7185")
+DARK = dict(bg="#0e0d13", surface="#17161e", field="#201f29", hover="#272632", pressed="#302f3c",
+            border="#24232d", border2="#3c3b48", text="#ecebf2", muted="#8f8d9d", warn="#fb7185")
 
 DEFAULT_CONFIG = {
     "homepage": "",            # leer = NyroxNite-Startseite
@@ -178,6 +185,7 @@ DEFAULT_CONFIG = {
     "running": False,
     "crash_count": 0,
     "sleep_tabs": True,
+    "account": None,
 }
 
 
@@ -248,9 +256,9 @@ def theme():
     dark = bool(CFG["dark_mode"])
     t = dict(DARK if dark else LIGHT)
     a1, a2 = ACCENTS.get(CFG["accent"], ACCENTS["Indigo"])
-    if dark:
+    if dark and CFG["accent"] != "Opera-Rot":
         a1, a2 = QColor(a1).lighter(125).name(), QColor(a2).lighter(115).name()
-    t.update(accent=a1, accent2=a2, accent_soft=mix(a1, t["surface"], 0.24 if dark else 0.12))
+    t.update(accent=a1, accent2=a2, accent_soft=mix(a1, t["surface"], 0.22 if dark else 0.12))
     t["dark"] = dark
     return t
 
@@ -280,6 +288,11 @@ ICONS = {
     "clock": '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>',
     "settings": '<path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/>',
     "external": '<path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',
+    "user": '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5"/>',
+    "min": '<path d="M6 12h12"/>',
+    "max": '<rect x="6" y="6" width="12" height="12" rx="1.5"/>',
+    "restore": '<rect x="5" y="9" width="10" height="10" rx="1.5"/><path d="M9 9V6.5A1.5 1.5 0 0 1 10.5 5h7A1.5 1.5 0 0 1 19 6.5v7a1.5 1.5 0 0 1-1.5 1.5H15"/>',
+    "logout": '<path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3"/><path d="M10 8l-4 4 4 4"/><path d="M6 12h10"/>',
     "sidebar": '<rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M9 4v16"/>',
     "incognito": '<path d="M3 11h18"/><path d="M6 11l2-6h8l2 6"/><circle cx="7.5" cy="16" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/><path d="M10 16h4"/>',
 }
@@ -337,18 +350,27 @@ QMainWindow, #central { background: @bg; }
 
 QTabBar { background: transparent; }
 QTabBar::tab {
-    background: transparent; color: @muted; padding: 8px 8px 8px 12px; margin: 6px 1px 0 1px;
-    border-top-left-radius: 10px; border-top-right-radius: 10px; min-width: 140px; max-width: 230px;
+    background: transparent; color: @muted; padding: 5px 6px 5px 10px; margin: 5px 2px;
+    border: 1px solid transparent; border-radius: 7px; min-width: 130px; max-width: 220px;
 }
 QTabBar::tab:hover:!selected { background: @hover; color: @text; }
-QTabBar::tab:selected { background: @surface; color: @text; }
+QTabBar::tab:selected { background: @accent_soft; color: @text; border: 1px solid @accent; }
 QTabBar::close-button { image: url(@closeicon); subcontrol-position: right; border-radius: 5px; padding: 2px; margin-right: 4px; }
 QTabBar::close-button:hover { background: @hover; }
 QTabBar QToolButton { background: @bg; border: none; border-radius: 6px; }
 QTabBar QToolButton:hover { background: @hover; }
 
 #navrow { background: @surface; }
-QToolButton#nav { border: none; border-radius: 17px; background: transparent; }
+QToolButton#nav { border: none; border-radius: 8px; background: transparent; }
+QToolButton#winctl, QToolButton#winclose { border: none; border-radius: 0; background: transparent; }
+QToolButton#winctl:hover { background: @hover; }
+QToolButton#winclose:hover { background: #e81123; }
+QToolButton#account { border: 1px solid @border; border-radius: 15px; background: @field; color: @text; padding: 2px 10px 2px 4px; font-weight: 600; }
+QToolButton#account:hover { background: @hover; border-color: @accent; }
+QToolButton#account::menu-indicator { image: none; width: 0; }
+QToolButton#avatar { border: none; border-radius: 16px; background: transparent; padding: 0; }
+QToolButton#avatar:hover { background: @hover; }
+QToolButton#avatar::menu-indicator { image: none; width: 0; }
 QToolButton#nav:hover { background: @hover; }
 QToolButton#nav:pressed { background: @pressed; }
 QToolButton#nav::menu-indicator { image: none; width: 0; }
@@ -356,14 +378,14 @@ QToolButton#pill { border: 1px solid @border; border-radius: 13px; padding: 3px 
 QToolButton#pill:hover { background: @hover; }
 
 QLineEdit#urlbar {
-    background: @field; color: @text; border: 2px solid transparent; border-radius: 18px;
-    padding: 0 8px; min-height: 32px; font-size: 14px; selection-background-color: @accent;
+    background: @field; color: @text; border: 1px solid transparent; border-radius: 8px;
+    padding: 0 8px; min-height: 30px; font-size: 13.5px; selection-background-color: @accent;
 }
 QLineEdit#urlbar:hover { background: @hover; }
-QLineEdit#urlbar:focus { background: @surface; border: 2px solid @accent; }
+QLineEdit#urlbar:focus { background: @field; border: 1px solid @accent; }
 
 #bmbar { background: @surface; border: none; border-bottom: 1px solid @border; padding: 1px 8px 4px 8px; spacing: 2px; }
-#bmbar QToolButton { padding: 4px 10px; border-radius: 8px; color: @text; background: transparent; }
+#bmbar QToolButton { padding: 3px 8px; border-radius: 6px; color: @text; background: transparent; }
 #bmbar QToolButton:hover { background: @hover; }
 
 QProgressBar#loadbar { background: @surface; border: none; }
@@ -417,7 +439,10 @@ QScrollBar::add-line, QScrollBar::sub-line { width: 0; height: 0; }
 QScrollBar::add-page, QScrollBar::sub-page { background: transparent; }
 
 #sidebar { background: @bg; }
-QToolButton#side, QToolButton#logo { border: none; border-radius: 12px; background: transparent; }
+#central { border: 1px solid @border; }
+#central[maxed="true"] { border: none; }
+#avatarbig { background: transparent; }
+QToolButton#side, QToolButton#logo { border: none; border-radius: 9px; background: transparent; }
 QToolButton#side:hover, QToolButton#logo:hover { background: @hover; }
 QToolButton#side:pressed, QToolButton#logo:pressed { background: @pressed; }
 QToolButton#side:checked { background: @accent_soft; border-left: 3px solid @accent; }
@@ -535,7 +560,8 @@ button:hover{transform:scale(1.06)}
 function tick(){var n=new Date();
  document.getElementById('c').textContent=n.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
  document.getElementById('d').textContent=n.toLocaleDateString('de-DE',{weekday:'long',day:'numeric',month:'long'});
- var h=n.getHours();document.getElementById('g').textContent=h<5?'Gute Nacht':h<11?'Guten Morgen':h<18?'Guten Tag':'Guten Abend';}
+ var h=n.getHours();document.getElementById('g').textContent=(h<5?'Gute Nacht':h<11?'Guten Morgen':h<18?'Guten Tag':'Guten Abend')+(NAME?', '+NAME:'');}
+var NAME=%%NAME%%;
 tick();setInterval(tick,1000);
 document.getElementById('f').addEventListener('submit',function(e){
  var v=document.getElementById('q').value.trim();
@@ -562,7 +588,8 @@ def write_newtab():
     repl = {"TEXT": t["text"], "MUTED": t["muted"], "BG": t["bg"], "SURFACE": t["surface"],
             "BORDER": t["border"], "ACCENT2": t["accent2"], "ACCENT": t["accent"],
             "SHADOW": ".35" if t["dark"] else ".07", "ACTION": eng.split("?")[0],
-            "ENGINE": CFG["search_engine"], "TILES": "".join(tiles), "VERSION": VERSION, "APPFULL": APP_FULL}
+            "ENGINE": CFG["search_engine"], "TILES": "".join(tiles), "VERSION": VERSION, "APPFULL": APP_FULL,
+            "NAME": json.dumps((CFG["account"] or {}).get("name", "")).replace("</", "<\\/")}
     for k, v in repl.items():
         page = page.replace(f"%%{k}%%", v)
     try:
@@ -1212,6 +1239,213 @@ class SettingsDialog(QDialog):
         self.accept()
 
 
+# ====================================================================== Konto (lokal)
+def hash_pw(pw, salt_hex):
+    return hashlib.pbkdf2_hmac("sha256", pw.encode("utf-8"), bytes.fromhex(salt_hex), 200_000).hex()
+
+
+def check_pw(pw):
+    acc = CFG["account"] or {}
+    if not acc.get("pw"):
+        return True
+    return hash_pw(pw, acc["salt"]) == acc["pw"]
+
+
+def round_pixmap(pm, size):
+    pm = pm.scaled(size, size, Qt.AspectRatioMode.KeepAspectRatioByExpanding,
+                   Qt.TransformationMode.SmoothTransformation)
+    out = QPixmap(size, size)
+    out.fill(Qt.GlobalColor.transparent)
+    p = QPainter(out)
+    p.setRenderHint(QPainter.RenderHint.Antialiasing)
+    from PyQt6.QtGui import QPainterPath
+    path = QPainterPath()
+    path.addEllipse(0, 0, size, size)
+    p.setClipPath(path)
+    p.drawPixmap((size - pm.width()) // 2, (size - pm.height()) // 2, pm)
+    p.end()
+    return out
+
+
+def avatar_icon(acc, size=64):
+    if acc and acc.get("avatar") and AVATAR_FILE.exists():
+        pm = QPixmap(str(AVATAR_FILE))
+        if not pm.isNull():
+            return QIcon(round_pixmap(pm, size))
+    name = (acc or {}).get("name") or "?"
+    return letter_icon(name, (acc or {}).get("color") or theme()["accent"])
+
+
+def account_changed():
+    for w in WINDOWS:
+        w.refresh_account()
+    write_newtab()
+    refresh_newtabs()
+
+
+class AccountDialog(QDialog):
+    """Konto erstellen oder bearbeiten."""
+
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.acc = dict(CFG["account"] or {})
+        self.new = not self.acc
+        self.avatar_src = None
+        self.setWindowTitle("Konto erstellen" if self.new else "Profil bearbeiten")
+        self.setMinimumWidth(420)
+        lay = QVBoxLayout(self)
+        lay.setContentsMargins(24, 22, 24, 20)
+        lay.setSpacing(12)
+        lay.addWidget(QLabel("Konto erstellen" if self.new else "Profil bearbeiten", objectName="title"))
+        if self.new:
+            info = QLabel("Dein Konto wird nur auf diesem PC gespeichert. Mit einem Passwort "
+                          "kannst du den Browser sperren.", objectName="muted")
+            info.setWordWrap(True)
+            lay.addWidget(info)
+        row = QHBoxLayout()
+        self.preview = QLabel(objectName="avatarbig")
+        self.preview.setFixedSize(72, 72)
+        pick = QPushButton("Profilbild wählen …")
+        pick.clicked.connect(self.pick_avatar)
+        row.addWidget(self.preview)
+        row.addSpacing(10)
+        row.addWidget(pick)
+        row.addStretch(1)
+        lay.addLayout(row)
+        f = QFormLayout()
+        f.setVerticalSpacing(10)
+        self.name = QLineEdit(self.acc.get("name", ""), placeholderText="Dein Name")
+        self.name.textChanged.connect(self.update_preview)
+        self.pw1 = QLineEdit(placeholderText="optional" if self.new or not self.acc.get("pw") else "leer = unverändert")
+        self.pw1.setEchoMode(QLineEdit.EchoMode.Password)
+        self.pw2 = QLineEdit(placeholderText="Passwort wiederholen")
+        self.pw2.setEchoMode(QLineEdit.EchoMode.Password)
+        f.addRow("Name", self.name)
+        f.addRow("Passwort", self.pw1)
+        f.addRow("", self.pw2)
+        lay.addLayout(f)
+        self.remove_pw = QCheckBox("Passwort entfernen")
+        if not self.new and self.acc.get("pw"):
+            lay.addWidget(self.remove_pw)
+        self.error = QLabel("", objectName="muted")
+        lay.addWidget(self.error)
+        bb = QDialogButtonBox(QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel)
+        ok = bb.button(QDialogButtonBox.StandardButton.Save)
+        ok.setText("Konto erstellen" if self.new else "Speichern")
+        ok.setObjectName("primary")
+        bb.button(QDialogButtonBox.StandardButton.Cancel).setText("Abbrechen")
+        bb.accepted.connect(self.save)
+        bb.rejected.connect(self.reject)
+        lay.addWidget(bb)
+        self.update_preview()
+
+    def update_preview(self):
+        acc = dict(self.acc, name=self.name.text() or "?")
+        acc.setdefault("color", theme()["accent"])
+        if self.avatar_src:
+            pm = QPixmap(self.avatar_src)
+            self.preview.setPixmap(round_pixmap(pm, 72))
+        else:
+            if not (acc.get("avatar") and AVATAR_FILE.exists()):
+                acc["avatar"] = ""
+            self.preview.setPixmap(avatar_icon(acc, 72).pixmap(72, 72))
+
+    def pick_avatar(self):
+        p, _ = QFileDialog.getOpenFileName(self, "Profilbild wählen", str(Path.home() / "Pictures"),
+                                           "Bilder (*.png *.jpg *.jpeg *.bmp *.gif *.webp)")
+        if p and not QPixmap(p).isNull():
+            self.avatar_src = p
+            self.update_preview()
+
+    def save(self):
+        name = self.name.text().strip()
+        if not name:
+            self.error.setText("Bitte gib einen Namen ein.")
+            return
+        if self.pw1.text() != self.pw2.text():
+            self.error.setText("Die Passwörter stimmen nicht überein.")
+            return
+        if self.pw1.text() and len(self.pw1.text()) < 4:
+            self.error.setText("Das Passwort muss mindestens 4 Zeichen haben.")
+            return
+        acc = self.acc
+        acc["name"] = name
+        acc.setdefault("color", SITE_COLORS[int(hashlib.md5(name.encode()).hexdigest(), 16) % len(SITE_COLORS)])
+        acc.setdefault("created", datetime.now().strftime("%d.%m.%Y"))
+        if self.pw1.text():
+            acc["salt"] = os.urandom(16).hex()
+            acc["pw"] = hash_pw(self.pw1.text(), acc["salt"])
+        elif self.remove_pw.isChecked():
+            acc["pw"] = ""
+        acc.setdefault("pw", "")
+        if self.avatar_src:
+            round_pixmap(QPixmap(self.avatar_src), 256).save(str(AVATAR_FILE), "PNG")
+            acc["avatar"] = AVATAR_FILE.name
+        CFG["account"] = acc
+        account_changed()
+        if WINDOWS:
+            WINDOWS[0].toast(f"Willkommen, {name}!" if self.new else "Profil gespeichert")
+        self.accept()
+
+
+class LoginDialog(QDialog):
+    """Anmeldung beim Start bzw. nach dem Sperren."""
+
+    def __init__(self):
+        super().__init__()
+        acc = CFG["account"] or {}
+        self.setWindowTitle(f"{APP_FULL} – Anmelden")
+        self.setWindowIcon(logo_icon())
+        self.setFixedWidth(380)
+        lay = QVBoxLayout(self)
+        lay.setContentsMargins(32, 30, 32, 26)
+        lay.setSpacing(12)
+        pic = QLabel()
+        pic.setPixmap(avatar_icon(acc, 96).pixmap(96, 96))
+        pic.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        title = QLabel(f"Willkommen zurück, {acc.get('name', '')}", objectName="title")
+        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        sub = QLabel(APP_FULL, objectName="muted")
+        sub.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.pw = QLineEdit(placeholderText="Passwort")
+        self.pw.setEchoMode(QLineEdit.EchoMode.Password)
+        self.pw.returnPressed.connect(self.try_login)
+        self.error = QLabel("", objectName="muted")
+        self.error.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        btn = QPushButton("Anmelden", objectName="primary")
+        btn.clicked.connect(self.try_login)
+        for w in (pic, title, sub, self.pw, self.error, btn):
+            lay.addWidget(w)
+        self.tries = 0
+
+    def try_login(self):
+        if check_pw(self.pw.text()):
+            self.accept()
+            return
+        self.tries += 1
+        self.pw.clear()
+        self.error.setText("Falsches Passwort." + (" Bitte warte kurz …" if self.tries >= 3 else ""))
+        if self.tries >= 3:
+            self.pw.setEnabled(False)
+            QTimer.singleShot(3000 * (self.tries - 2), lambda: (self.pw.setEnabled(True), self.pw.setFocus()))
+
+
+def lock_browser():
+    app = QApplication.instance()
+    app.setQuitOnLastWindowClosed(False)
+    shown = [w for w in WINDOWS if w.isVisible()]
+    for w in shown:
+        w.hide()
+    if DOWNLOADS:
+        DOWNLOADS.hide()
+    if LoginDialog().exec() == QDialog.DialogCode.Accepted:
+        for w in shown:
+            w.show()
+        app.setQuitOnLastWindowClosed(True)
+    else:
+        QApplication.quit()
+
+
 # ====================================================================== Profile & Downloads
 # ====================================================================== Seitenleisten-Symbole
 _fav_net = None
@@ -1355,12 +1589,18 @@ class BrowserWindow(QMainWindow):
         self.setWindowIcon(logo_icon())
         self.resize(1320, 860)
         self.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+        self.setWindowFlag(Qt.WindowType.FramelessWindowHint, True)   # eigene Titelleiste wie Opera GX
+        self._normal_geo = None
 
         central = QWidget(objectName="central")
+        central.setMouseTracking(True)
+        central.installEventFilter(self)
+        self.central = central
         central.setProperty("private", "true" if private else "false")
         self.setCentralWidget(central)
         outer = QHBoxLayout(central)
-        outer.setContentsMargins(0, 0, 0, 0)
+        outer.setContentsMargins(4, 4, 4, 4)
+        self.outer = outer
         outer.setSpacing(0)
         self.panel_views = {}
         self.panel_url = None
@@ -1432,8 +1672,8 @@ class BrowserWindow(QMainWindow):
     def side_button(self, tip, fn, name=None):
         b = QToolButton(objectName="side")
         b.setToolTip(tip)
-        b.setIconSize(QSize(22, 22))
-        b.setFixedSize(44, 44)
+        b.setIconSize(QSize(20, 20))
+        b.setFixedSize(38, 38)
         b.setCursor(Qt.CursorShape.PointingHandCursor)
         if fn:
             b.clicked.connect(fn)
@@ -1443,14 +1683,14 @@ class BrowserWindow(QMainWindow):
 
     def build_sidebar(self, outer):
         self.sidebar = QWidget(objectName="sidebar")
-        self.sidebar.setFixedWidth(60)
+        self.sidebar.setFixedWidth(52)
         sb = QVBoxLayout(self.sidebar)
-        sb.setContentsMargins(8, 8, 8, 10)
+        sb.setContentsMargins(7, 6, 7, 10)
         sb.setSpacing(6)
         self.logo_btn = QToolButton(objectName="logo")
         self.logo_btn.setIcon(logo_icon())
-        self.logo_btn.setIconSize(QSize(30, 30))
-        self.logo_btn.setFixedSize(44, 44)
+        self.logo_btn.setIconSize(QSize(26, 26))
+        self.logo_btn.setFixedSize(38, 38)
         self.logo_btn.setToolTip("NyroxNite-Menü")
         self.logo_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.logo_btn.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
@@ -1615,13 +1855,24 @@ class BrowserWindow(QMainWindow):
         self.stack = QStackedWidget()
         self.tabs = Tabs(bar, self.stack)
         self.tabs.currentChanged.connect(self.on_tab_changed)
-        tr.addWidget(bar, 0, Qt.AlignmentFlag.AlignBottom)
+        self.tabrow.setFixedHeight(40)
+        tr.addWidget(bar, 0, Qt.AlignmentFlag.AlignVCenter)
         self.newtab_btn = self.icon_button("plus", "Neuer Tab (Strg+T)", lambda: self.add_tab())
         self.newtab_btn.setFixedSize(30, 30)
         tr.addWidget(self.newtab_btn, 0, Qt.AlignmentFlag.AlignVCenter)
         tr.addStretch(1)
         if self.private:
             tr.addWidget(QLabel("Privat", objectName="privbadge"), 0, Qt.AlignmentFlag.AlignVCenter)
+            tr.addSpacing(8)
+        self.min_btn = self.icon_button("min", "Minimieren", self.showMinimized)
+        self.max_btn = self.icon_button("max", "Maximieren", self.toggle_max)
+        self.close_btn = self.icon_button("x", "Schließen", self.close)
+        for b in (self.min_btn, self.max_btn, self.close_btn):
+            b.setObjectName("winclose" if b is self.close_btn else "winctl")
+            b.setFixedSize(46, 34)
+            b.setIconSize(QSize(16, 16))
+            tr.addWidget(b, 0, Qt.AlignmentFlag.AlignTop)
+        tr.setContentsMargins(8, 0, 0, 0)
         root.addWidget(self.tabrow)
 
     def build_navrow(self, root):
@@ -1663,14 +1914,23 @@ class BrowserWindow(QMainWindow):
         self.theme_btn = self.icon_button("moon", "Hell/Dunkel umschalten", self.toggle_theme)
         self.menu_btn = self.icon_button("menu", "Menü", None)
         self.menu_btn.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
-        for b in (self.shield_btn, self.dl_btn, self.theme_btn, self.menu_btn):
+        for b in (self.shield_btn, self.dl_btn, self.theme_btn):
             nr.addWidget(b)
+        nr.addSpacing(4)
+        self.account_btn = QToolButton(objectName="account")
+        self.account_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.account_btn.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
+        self.account_btn.clicked.connect(self.on_account_clicked)
+        nr.addWidget(self.account_btn)
+        nr.addSpacing(2)
+        nr.addWidget(self.menu_btn)
         root.addWidget(self.navrow)
 
     def build_bookmark_bar(self, root):
         self.bm_bar = QToolBar("Lesezeichen", objectName="bmbar")
         self.bm_bar.setMovable(False)
-        self.bm_bar.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextOnly)
+        self.bm_bar.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+        self.bm_bar.setIconSize(QSize(16, 16))
         root.addWidget(self.bm_bar)
         self.bm_bar.setVisible(bool(CFG["show_bookmarks"]))
         self.refresh_bookmark_bar()
@@ -1682,6 +1942,7 @@ class BrowserWindow(QMainWindow):
             a = QAction(title, self)
             a.setToolTip(b["url"])
             a.triggered.connect(lambda _=False, u=b["url"]: self.view().setUrl(QUrl(u)))
+            set_site_icon(a, b)
             self.bm_bar.addAction(a)
         if not CFG["bookmarks"]:
             a = QAction("Lesezeichen mit Strg+D hinzufügen", self)
@@ -1827,10 +2088,144 @@ class BrowserWindow(QMainWindow):
             if i >= 0:
                 self.close_tab(i)
                 return True
-        if obj is getattr(self, "tabrow", None) and ev.type() == QEvent.Type.MouseButtonDblClick:
-            self.add_tab()
-            return True
+        if obj is getattr(self, "tabrow", None):
+            if ev.type() == QEvent.Type.MouseButtonDblClick and ev.button() == Qt.MouseButton.LeftButton:
+                self.toggle_max()
+                return True
+            if ev.type() == QEvent.Type.MouseButtonPress and ev.button() == Qt.MouseButton.LeftButton:
+                if self._normal_geo is not None:          # aus "maximiert" herausziehen
+                    gpos = ev.globalPosition().toPoint()
+                    g = self._normal_geo
+                    ratio = gpos.x() / max(1, self.width())
+                    self._normal_geo = None
+                    self.setGeometry(int(gpos.x() - g.width() * ratio), max(0, gpos.y() - 18), g.width(), g.height())
+                    self.update_frame()
+                if self.windowHandle():
+                    self.windowHandle().startSystemMove()     # Fenster verschieben (inkl. Andocken)
+                return True
+        if obj is getattr(self, "central", None) and not self.is_maxed():
+            if ev.type() in (QEvent.Type.MouseMove, QEvent.Type.HoverMove):
+                edges = self._edges_at(ev.position().toPoint())
+                self.central.setCursor(self._edge_cursor(edges))
+            elif ev.type() == QEvent.Type.MouseButtonPress and ev.button() == Qt.MouseButton.LeftButton:
+                edges = self._edges_at(ev.position().toPoint())
+                if edges != Qt.Edge(0) and self.windowHandle():
+                    self.windowHandle().startSystemResize(edges)
+                    return True
+            elif ev.type() == QEvent.Type.Leave:
+                self.central.unsetCursor()
         return super().eventFilter(obj, ev)
+
+    # ------------------------------------------------------------ Fenster (rahmenlos)
+    def is_maxed(self):
+        return self.isMaximized() or self.isFullScreen() or self._normal_geo is not None
+
+    def _edges_at(self, pos):
+        m, r = 6, self.central.rect()
+        e = Qt.Edge(0)
+        if pos.x() <= m:
+            e |= Qt.Edge.LeftEdge
+        if pos.x() >= r.width() - m:
+            e |= Qt.Edge.RightEdge
+        if pos.y() <= m:
+            e |= Qt.Edge.TopEdge
+        if pos.y() >= r.height() - m:
+            e |= Qt.Edge.BottomEdge
+        return e
+
+    @staticmethod
+    def _edge_cursor(e):
+        E, C = Qt.Edge, Qt.CursorShape
+        if e in (E.LeftEdge | E.TopEdge, E.RightEdge | E.BottomEdge):
+            return C.SizeFDiagCursor
+        if e in (E.RightEdge | E.TopEdge, E.LeftEdge | E.BottomEdge):
+            return C.SizeBDiagCursor
+        if e in (E.LeftEdge, E.RightEdge):
+            return C.SizeHorCursor
+        if e in (E.TopEdge, E.BottomEdge):
+            return C.SizeVerCursor
+        return C.ArrowCursor
+
+    def toggle_max(self):
+        if self.isMaximized():
+            self.showNormal()
+        elif self._normal_geo is not None:
+            self.setGeometry(self._normal_geo)
+            self._normal_geo = None
+        else:
+            self._normal_geo = self.geometry()
+            scr = self.screen() or QApplication.primaryScreen()
+            self.setGeometry(scr.availableGeometry())   # Taskleiste bleibt sichtbar
+        self.update_frame()
+
+    def update_frame(self):
+        maxed = self.is_maxed()
+        self.outer.setContentsMargins(*( (0, 0, 0, 0) if maxed else (4, 4, 4, 4) ))
+        self.central.setProperty("maxed", "true" if maxed else "false")
+        self.central.style().unpolish(self.central)
+        self.central.style().polish(self.central)
+        self.max_btn.setIcon(make_icon("restore" if maxed else "max", theme()["text"]))
+        self.max_btn.setToolTip("Verkleinern" if maxed else "Maximieren")
+
+    def changeEvent(self, e):
+        super().changeEvent(e)
+        if e.type() == QEvent.Type.WindowStateChange and hasattr(self, "max_btn"):
+            if not self.isMaximized() and self._normal_geo is None:
+                pass
+            self.update_frame()
+
+    # ------------------------------------------------------------ Konto
+    def refresh_account(self):
+        acc = CFG["account"]
+        t = theme()
+        if not acc:
+            self.account_btn.setObjectName("account")
+            self.account_btn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonTextBesideIcon)
+            self.account_btn.setText("Konto erstellen")
+            self.account_btn.setIcon(make_icon("user", t["accent"]))
+            self.account_btn.setIconSize(QSize(18, 18))
+            self.account_btn.setFixedSize(QSize(150, 30))
+            self.account_btn.setToolTip("Lokales Konto erstellen")
+            self.account_btn.setMenu(None)
+        else:
+            self.account_btn.setObjectName("avatar")
+            self.account_btn.setToolButtonStyle(Qt.ToolButtonStyle.ToolButtonIconOnly)
+            self.account_btn.setText("")
+            self.account_btn.setIcon(avatar_icon(acc))
+            self.account_btn.setIconSize(QSize(26, 26))
+            self.account_btn.setFixedSize(QSize(34, 34))
+            self.account_btn.setToolTip(f"Angemeldet als {acc['name']}")
+            m = QMenu(self)
+            head = QAction(avatar_icon(acc), acc["name"], m)
+            head.setEnabled(False)
+            m.addAction(head)
+            m.addSeparator()
+            m.addAction(make_icon("user", t["text"]), "Profil bearbeiten", lambda: AccountDialog(self).exec())
+            if acc.get("pw"):
+                m.addAction(make_icon("lock", t["text"]), "Abmelden und sperren", lock_browser)
+            else:
+                m.addAction(make_icon("lock", t["text"]), "Passwort festlegen …", lambda: AccountDialog(self).exec())
+            m.addSeparator()
+            m.addAction(make_icon("logout", t["warn"]), "Konto löschen", self.delete_account)
+            self.account_btn.setMenu(m)
+        self.account_btn.style().unpolish(self.account_btn)
+        self.account_btn.style().polish(self.account_btn)
+
+    def on_account_clicked(self):
+        if not CFG["account"]:
+            AccountDialog(self).exec()
+
+    def delete_account(self):
+        if QMessageBox.question(self, "Konto löschen",
+                                "Konto wirklich löschen? Lesezeichen und Verlauf bleiben erhalten.") \
+                == QMessageBox.StandardButton.Yes:
+            CFG["account"] = None
+            try:
+                AVATAR_FILE.unlink()
+            except Exception:
+                pass
+            account_changed()
+            self.toast("Konto gelöscht")
 
     # ------------------------------------------------------------ Symbole
     def refresh_icons(self):
@@ -1840,12 +2235,16 @@ class BrowserWindow(QMainWindow):
                 name = "stop" if self.loading else "reload"
             elif b is self.theme_btn:
                 name = "sun" if t["dark"] else "moon"
+            elif b is getattr(self, "max_btn", None):
+                name = "restore" if self.is_maxed() else "max"
             elif b is self.shield_btn:
                 b.setIcon(make_icon("shield" if CFG["adblock"] else "shield_off",
                                     t["accent"] if CFG["adblock"] else t["muted"]))
                 b.setToolTip("Werbeblocker: an" if CFG["adblock"] else "Werbeblocker: aus")
                 continue
             b.setIcon(make_icon(name, t["text"]))
+        if hasattr(self, "account_btn"):
+            self.refresh_account()
         self.update_star()
         v = self.view()
         if v:
@@ -2351,6 +2750,7 @@ class BrowserWindow(QMainWindow):
     def showEvent(self, e):
         super().showEvent(e)
         set_dark_titlebar(self, theme()["dark"])
+        self.update_frame()
 
     def closeEvent(self, e):
         save_all_sessions()
@@ -2421,6 +2821,14 @@ def main():
     apply_theme()
     DOWNLOADS = DownloadsDialog()
     UPDATER = Updater()
+
+    if (CFG["account"] or {}).get("pw"):
+        app.setQuitOnLastWindowClosed(False)
+        if LoginDialog().exec() != QDialog.DialogCode.Accepted:
+            CFG.data["running"] = False
+            CFG.save()
+            return 0
+        app.setQuitOnLastWindowClosed(True)
 
     args = [a for a in sys.argv[1:] if not a.startswith("-") and not a.lower().endswith((".py", ".exe"))]
     restore = CFG["restore_once"] or CFG["restore_session"] or crashed
