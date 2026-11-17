@@ -10,8 +10,15 @@ Updater: Die EXE lädt diese Datei bei jedem Start neu. Wird browser.py verände
          offene Tabs bleiben dabei erhalten.
 """
 
-VERSION = "2.4.0"
+VERSION = "2.5.0"
 CHANGELOG = {
+    "2.5.0": [
+        "Neues Design im Opera-Stil mit Seitenleiste links",
+        "Schnellzugriff: WhatsApp, Discord, Instagram, Spotify, YouTube und Twitch als Seitenfenster",
+        "Eigene Seiten zur Seitenleiste hinzufügen (Plus-Knopf)",
+        "Neue Akzentfarbe Opera-Rot",
+        "Bessere Kompatibilität mit WhatsApp Web und Google-Anmeldung",
+    ],
     "2.4.0": [
         "Online-Updates sind eingeschaltet: Updates kommen jetzt auf jeden PC",
     ],
@@ -57,7 +64,7 @@ from PyQt6.QtSvg import QSvgRenderer
 from PyQt6.QtNetwork import QNetworkAccessManager, QNetworkRequest, QNetworkReply
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QTabBar, QStackedWidget, QToolButton,
-    QToolBar, QLineEdit, QProgressBar, QLabel, QFrame, QDialog, QListWidget, QListWidgetItem, QPushButton,
+    QToolBar, QSplitter, QLineEdit, QProgressBar, QLabel, QFrame, QDialog, QListWidget, QListWidgetItem, QPushButton,
     QFileDialog, QMessageBox, QComboBox, QCheckBox, QCompleter, QMenu, QInputDialog, QFormLayout,
     QDialogButtonBox,
 )
@@ -113,6 +120,7 @@ AD_HOSTS = {
 }
 
 ACCENTS = {
+    "Opera-Rot": ("#ff1b2d", "#ff5a6a"),
     "Indigo": ("#6366f1", "#8b5cf6"),
     "Blau": ("#2563eb", "#0ea5e9"),
     "Grün": ("#059669", "#14b8a6"),
@@ -129,7 +137,17 @@ DEFAULT_CONFIG = {
     "homepage": "",            # leer = NyroxNite-Startseite
     "search_engine": "DuckDuckGo",
     "dark_mode": False,
-    "accent": "Indigo",
+    "accent": "Opera-Rot",
+    "sidebar": [
+        {"title": "WhatsApp", "url": "https://web.whatsapp.com"},
+        {"title": "Discord", "url": "https://discord.com/app"},
+        {"title": "Instagram", "url": "https://www.instagram.com"},
+        {"title": "Spotify", "url": "https://open.spotify.com"},
+        {"title": "YouTube", "url": "https://www.youtube.com"},
+        {"title": "Twitch", "url": "https://www.twitch.tv"},
+    ],
+    "show_sidebar": True,
+    "panel_width": 440,
     "force_dark_web": False,
     "adblock": True,
     "block_popups": False,
@@ -238,6 +256,10 @@ ICONS = {
     "up": '<path d="M18 15l-6-6-6 6"/>',
     "down": '<path d="M6 9l6 6 6-6"/>',
     "check": '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+    "clock": '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/>',
+    "settings": '<path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="15" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/>',
+    "external": '<path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',
+    "sidebar": '<rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M9 4v16"/>',
     "incognito": '<path d="M3 11h18"/><path d="M6 11l2-6h8l2 6"/><circle cx="7.5" cy="16" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/><path d="M10 16h4"/>',
 }
 
@@ -289,7 +311,7 @@ QSS = """
 * { font-family: "Segoe UI Variable Text", "Segoe UI", "Inter", "Helvetica Neue", sans-serif; font-size: 13px; }
 QMainWindow, #central { background: @bg; }
 #tabrow { background: @bg; }
-#central[private="true"] #tabrow, #central[private="true"] { background: @privbg; }
+#central[private="true"] #tabrow, #central[private="true"] #sidebar, #central[private="true"] { background: @privbg; }
 #privbadge { color: #ffffff; background: #7c3aed; border-radius: 10px; padding: 3px 10px; font-weight: 600; }
 
 QTabBar { background: transparent; }
@@ -372,6 +394,19 @@ QScrollBar:horizontal { background: transparent; height: 10px; margin: 2px; }
 QScrollBar::handle:horizontal { background: @border2; border-radius: 4px; min-width: 30px; }
 QScrollBar::add-line, QScrollBar::sub-line { width: 0; height: 0; }
 QScrollBar::add-page, QScrollBar::sub-page { background: transparent; }
+
+#sidebar { background: @bg; }
+QToolButton#side, QToolButton#logo { border: none; border-radius: 12px; background: transparent; }
+QToolButton#side:hover, QToolButton#logo:hover { background: @hover; }
+QToolButton#side:pressed, QToolButton#logo:pressed { background: @pressed; }
+QToolButton#side:checked { background: @accent_soft; border-left: 3px solid @accent; }
+QToolButton#side::menu-indicator, QToolButton#logo::menu-indicator { image: none; width: 0; }
+#sidesep { background: @border; }
+#panel { background: @surface; border-right: 1px solid @border; }
+#panelhead { background: @surface; border-bottom: 1px solid @border; }
+#panelhead QLabel { font-weight: 600; font-size: 13px; }
+QSplitter::handle { background: @border; }
+QSplitter::handle:hover { background: @accent; }
 
 QToolTip { background: @text; color: @surface; border: none; padding: 6px 9px; border-radius: 7px; }
 QLabel#hover { background: @surface; color: @muted; border: 1px solid @border; border-radius: 8px; padding: 4px 10px; font-size: 12px; }
@@ -1140,6 +1175,78 @@ class SettingsDialog(QDialog):
 
 
 # ====================================================================== Profile & Downloads
+# ====================================================================== Seitenleisten-Symbole
+_fav_net = None
+SITE_COLORS = ["#25d366", "#5865f2", "#e1306c", "#1db954", "#ff0000", "#9146ff", "#0ea5e9", "#f59e0b"]
+
+
+def letter_icon(text, color):
+    pm = QPixmap(64, 64)
+    pm.fill(Qt.GlobalColor.transparent)
+    p = QPainter(pm)
+    p.setRenderHint(QPainter.RenderHint.Antialiasing)
+    p.setBrush(QColor(color))
+    p.setPen(Qt.PenStyle.NoPen)
+    p.drawEllipse(2, 2, 60, 60)
+    p.setPen(QColor("#ffffff"))
+    f = p.font()
+    f.setPixelSize(30)
+    f.setBold(True)
+    p.setFont(f)
+    p.drawText(pm.rect(), Qt.AlignmentFlag.AlignCenter, (text or "?")[:1].upper())
+    p.end()
+    return QIcon(pm)
+
+
+def set_site_icon(btn, item):
+    """Setzt sofort ein Buchstaben-Symbol und lädt im Hintergrund das echte Seiten-Icon."""
+    global _fav_net
+    url = item["url"]
+    host = QUrl(url).host().lower() or url
+    color = SITE_COLORS[int(hashlib.md5(host.encode()).hexdigest(), 16) % len(SITE_COLORS)]
+    path = ICON_DIR / ("fav_" + re.sub(r"[^a-z0-9.]+", "_", host) + ".png")
+
+    def apply(icon):
+        try:
+            btn.setIcon(icon)
+        except RuntimeError:
+            pass  # Knopf existiert nicht mehr
+
+    if path.exists():
+        pm = QPixmap(str(path))
+        if not pm.isNull():
+            apply(QIcon(pm))
+            return
+    apply(letter_icon(item.get("title") or host, color))
+    if _fav_net is None:
+        _fav_net = QNetworkAccessManager()
+    req = QNetworkRequest(QUrl("https://www.google.com/s2/favicons?sz=64&domain_url=" + quote_plus(url)))
+    reply = _fav_net.get(req)
+
+    def done():
+        try:
+            if reply.error() == QNetworkReply.NetworkError.NoError:
+                pm = QPixmap()
+                if pm.loadFromData(bytes(reply.readAll())) and pm.width() >= 32:
+                    pm.save(str(path), "PNG")
+                    apply(QIcon(pm))
+        finally:
+            reply.deleteLater()
+    reply.finished.connect(done)
+
+
+def remove_sidebar_site(url):
+    CFG["sidebar"] = [s for s in CFG["sidebar"] if s["url"] != url]
+    for w in WINDOWS:
+        if w.panel_url == url:
+            w.close_panel()
+        v = w.panel_views.pop(url, None)
+        if v:
+            w.panel_stack.removeWidget(v)
+            v.deleteLater()
+        w.refresh_sidebar()
+
+
 def get_profile(private):
     key = "private" if private else "default"
     if key not in _profiles:
@@ -1150,6 +1257,8 @@ def get_profile(private):
             p.setPersistentStoragePath(str(DATA_DIR / "storage"))
             p.setCachePath(str(DATA_DIR / "cache"))
             p.setPersistentCookiesPolicy(QWebEngineProfile.PersistentCookiesPolicy.AllowPersistentCookies)
+        # "QtWebEngine" aus der Kennung entfernen – sonst lehnen WhatsApp Web & Co. den Browser ab
+        p.setHttpUserAgent(re.sub(r"\s*QtWebEngine/\S+", "", p.httpUserAgent()))
         p._blocker = AdBlocker()
         p.setUrlRequestInterceptor(p._blocker)
         p.downloadRequested.connect(on_download)
@@ -1210,7 +1319,16 @@ class BrowserWindow(QMainWindow):
         central = QWidget(objectName="central")
         central.setProperty("private", "true" if private else "false")
         self.setCentralWidget(central)
-        root = QVBoxLayout(central)
+        outer = QHBoxLayout(central)
+        outer.setContentsMargins(0, 0, 0, 0)
+        outer.setSpacing(0)
+        self.panel_views = {}
+        self.panel_url = None
+        self.site_buttons = []
+        self.build_sidebar(outer)
+
+        self.maincol = QWidget(objectName="maincol")
+        root = QVBoxLayout(self.maincol)
         root.setContentsMargins(0, 0, 0, 0)
         root.setSpacing(0)
 
@@ -1228,6 +1346,17 @@ class BrowserWindow(QMainWindow):
         root.addWidget(self.stack, 1)
         self.build_find_bar(root)
 
+        self.build_panel()
+        self.splitter = QSplitter(Qt.Orientation.Horizontal)
+        self.splitter.setHandleWidth(1)
+        self.splitter.setChildrenCollapsible(False)
+        self.splitter.addWidget(self.panel)
+        self.splitter.addWidget(self.maincol)
+        self.splitter.setStretchFactor(0, 0)
+        self.splitter.setStretchFactor(1, 1)
+        self.splitter.splitterMoved.connect(self.on_splitter_moved)
+        outer.addWidget(self.splitter, 1)
+
         self.hover = QLabel(self.stack, objectName="hover")
         self.hover.hide()
         self.toast_lbl = QLabel(self.stack, objectName="toast")
@@ -1236,6 +1365,7 @@ class BrowserWindow(QMainWindow):
         self.toast_timer.timeout.connect(self.toast_lbl.hide)
 
         self.build_menu()
+        self.logo_btn.setMenu(self.main_menu)
         self.build_shortcuts()
         self.refresh_icons()
         if private:
@@ -1252,6 +1382,171 @@ class BrowserWindow(QMainWindow):
             b.clicked.connect(fn)
         self.icon_buttons[b] = name
         return b
+
+    # ------------------------------------------------------------ Seitenleiste (Opera-Stil)
+    def side_button(self, tip, fn, name=None):
+        b = QToolButton(objectName="side")
+        b.setToolTip(tip)
+        b.setIconSize(QSize(22, 22))
+        b.setFixedSize(44, 44)
+        b.setCursor(Qt.CursorShape.PointingHandCursor)
+        if fn:
+            b.clicked.connect(fn)
+        if name:
+            self.icon_buttons[b] = name
+        return b
+
+    def build_sidebar(self, outer):
+        self.sidebar = QWidget(objectName="sidebar")
+        self.sidebar.setFixedWidth(60)
+        sb = QVBoxLayout(self.sidebar)
+        sb.setContentsMargins(8, 8, 8, 10)
+        sb.setSpacing(6)
+        self.logo_btn = QToolButton(objectName="logo")
+        self.logo_btn.setIcon(logo_icon())
+        self.logo_btn.setIconSize(QSize(30, 30))
+        self.logo_btn.setFixedSize(44, 44)
+        self.logo_btn.setToolTip("NyroxNite-Menü")
+        self.logo_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.logo_btn.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
+        sb.addWidget(self.logo_btn, 0, Qt.AlignmentFlag.AlignHCenter)
+        sb.addWidget(self._side_sep(), 0, Qt.AlignmentFlag.AlignHCenter)
+
+        self.site_wrap = QWidget()
+        self.site_lay = QVBoxLayout(self.site_wrap)
+        self.site_lay.setContentsMargins(0, 0, 0, 0)
+        self.site_lay.setSpacing(6)
+        sb.addWidget(self.site_wrap, 0, Qt.AlignmentFlag.AlignHCenter)
+        self.add_site_btn = self.side_button("Seite zur Seitenleiste hinzufügen", self.add_sidebar_site, "plus")
+        sb.addWidget(self.add_site_btn, 0, Qt.AlignmentFlag.AlignHCenter)
+        sb.addStretch(1)
+
+        sb.addWidget(self._side_sep(), 0, Qt.AlignmentFlag.AlignHCenter)
+        for name, tip, fn in (("star", "Lesezeichen", lambda: BookmarksDialog(self).exec()),
+                              ("clock", "Verlauf", lambda: HistoryDialog(self).exec()),
+                              ("download", "Downloads", show_downloads),
+                              ("settings", "Einstellungen", lambda: SettingsDialog(self).exec())):
+            sb.addWidget(self.side_button(tip, fn, name), 0, Qt.AlignmentFlag.AlignHCenter)
+        self.sidebar.setVisible(bool(CFG["show_sidebar"]))
+        outer.addWidget(self.sidebar)
+        self.refresh_sidebar()
+
+    def _side_sep(self):
+        line = QFrame(objectName="sidesep")
+        line.setFixedHeight(1)
+        line.setFixedWidth(32)
+        return line
+
+    def refresh_sidebar(self):
+        for b in self.site_buttons:
+            self.site_lay.removeWidget(b)
+            b.deleteLater()
+        self.site_buttons = []
+        for item in CFG["sidebar"]:
+            b = self.side_button(item["title"], None)
+            b.setCheckable(True)
+            b.setChecked(self.panel_url == item["url"] and self.panel.isVisible() if hasattr(self, "panel") else False)
+            b.setProperty("site_url", item["url"])
+            b.clicked.connect(lambda _=False, it=item: self.toggle_panel(it))
+            b.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+            b.customContextMenuRequested.connect(lambda pos, it=item, btn=b: self.site_menu(it, btn, pos))
+            set_site_icon(b, item)
+            self.site_lay.addWidget(b, 0, Qt.AlignmentFlag.AlignHCenter)
+            self.site_buttons.append(b)
+
+    def site_menu(self, item, btn, pos):
+        m = QMenu(self)
+        m.addAction("In neuem Tab öffnen", lambda: self.add_tab(QUrl(item["url"])))
+        m.addAction("Seitenfenster neu laden", lambda: self.panel_views[item["url"]].reload()
+                    if item["url"] in self.panel_views else None)
+        m.addSeparator()
+        m.addAction("Aus Seitenleiste entfernen", lambda: remove_sidebar_site(item["url"]))
+        m.exec(btn.mapToGlobal(pos))
+
+    def add_sidebar_site(self):
+        v = self.view()
+        cur = v.url().toString() if v and not is_newtab(v.url()) else "https://"
+        url, ok = QInputDialog.getText(self, "Zur Seitenleiste hinzufügen", "Adresse der Seite:", text=cur)
+        if not ok or not url.strip() or url.strip() == "https://":
+            return
+        url = QUrl.fromUserInput(url.strip()).toString()
+        default = QUrl(url).host().replace("www.", "").split(".")[0].capitalize()
+        title, ok = QInputDialog.getText(self, "Zur Seitenleiste hinzufügen", "Name:", text=default)
+        if not ok:
+            return
+        CFG["sidebar"] = CFG["sidebar"] + [{"title": title or default, "url": url}]
+        for w in WINDOWS:
+            w.refresh_sidebar()
+        self.toast(f"{title or default} zur Seitenleiste hinzugefügt")
+
+    def toggle_sidebar(self):
+        CFG["show_sidebar"] = not CFG["show_sidebar"]
+        for w in WINDOWS:
+            w.sidebar.setVisible(bool(CFG["show_sidebar"]))
+            if not CFG["show_sidebar"]:
+                w.close_panel()
+
+    # ------------------------------------------------------------ Seitenfenster
+    def build_panel(self):
+        self.panel = QWidget(objectName="panel")
+        pl = QVBoxLayout(self.panel)
+        pl.setContentsMargins(0, 0, 0, 0)
+        pl.setSpacing(0)
+        head = QWidget(objectName="panelhead")
+        hl = QHBoxLayout(head)
+        hl.setContentsMargins(12, 6, 6, 6)
+        hl.setSpacing(2)
+        self.panel_title = QLabel("")
+        hl.addWidget(self.panel_title, 1)
+        hl.addWidget(self.icon_button("reload", "Neu laden", lambda: self.panel_stack.currentWidget()
+                                      and self.panel_stack.currentWidget().reload()))
+        hl.addWidget(self.icon_button("external", "In neuem Tab öffnen", self.panel_to_tab))
+        hl.addWidget(self.icon_button("x", "Seitenfenster schließen", self.close_panel))
+        self.panel_stack = QStackedWidget()
+        pl.addWidget(head)
+        pl.addWidget(self.panel_stack, 1)
+        self.panel.setMinimumWidth(320)
+        self.panel.hide()
+
+    def toggle_panel(self, item):
+        url = item["url"]
+        if self.panel.isVisible() and self.panel_url == url:
+            self.close_panel()
+            return
+        if url not in self.panel_views:
+            v = QWebEngineView()
+            v.setPage(WebPage(self.profile, self))
+            self.apply_web_settings(v)
+            v.setUrl(QUrl(url))
+            self.panel_views[url] = v
+            self.panel_stack.addWidget(v)
+        self.panel_stack.setCurrentWidget(self.panel_views[url])
+        self.panel_url = url
+        self.panel_title.setText(item["title"])
+        was_hidden = not self.panel.isVisible()
+        self.panel.show()
+        if was_hidden:
+            total = max(self.splitter.width(), 900)
+            pw = int(CFG["panel_width"] or 440)
+            self.splitter.setSizes([pw, total - pw])
+        for b in self.site_buttons:
+            b.setChecked(b.property("site_url") == url)
+
+    def close_panel(self):
+        self.panel.hide()
+        self.panel_url = None
+        for b in self.site_buttons:
+            b.setChecked(False)
+
+    def panel_to_tab(self):
+        v = self.panel_stack.currentWidget()
+        if v:
+            self.add_tab(QUrl(v.url()))
+            self.close_panel()
+
+    def on_splitter_moved(self, *_):
+        if self.panel.isVisible():
+            CFG.data["panel_width"] = self.splitter.sizes()[0]
 
     def build_tabrow(self, root):
         self.tabrow = QWidget(objectName="tabrow")
@@ -1415,6 +1710,7 @@ class BrowserWindow(QMainWindow):
             ("Verlauf", "Ctrl+H", lambda: HistoryDialog(self).exec()),
             ("Lesezeichen verwalten", "Ctrl+Shift+O", lambda: BookmarksDialog(self).exec()),
             ("Lesezeichenleiste ein/aus", "Ctrl+Shift+B", self.toggle_bookmark_bar),
+            ("Seitenleiste ein/aus", "Ctrl+Shift+S", self.toggle_sidebar),
             ("Downloads", "Ctrl+J", show_downloads),
             ("Geschlossenen Tab wiederherstellen", "Ctrl+Shift+T", self.reopen_tab),
             None,
@@ -1449,6 +1745,7 @@ class BrowserWindow(QMainWindow):
             m.addAction(a)
             self.addAction(a)
         self.menu_btn.setMenu(m)
+        self.main_menu = m
 
     def build_shortcuts(self):
         sc = [
@@ -1873,6 +2170,12 @@ class BrowserWindow(QMainWindow):
     def set_chrome_visible(self, visible):
         for w in (self.tabrow, self.navrow, self.loadbar):
             w.setVisible(visible)
+        self.sidebar.setVisible(visible and bool(CFG["show_sidebar"]))
+        if not visible:
+            self._panel_was_open = self.panel.isVisible()
+            self.panel.hide()
+        elif getattr(self, "_panel_was_open", False) and self.panel_url:
+            self.panel.show()
         self.bm_bar.setVisible(visible and bool(CFG["show_bookmarks"]))
         if not visible:
             self.banner.hide()
@@ -2003,6 +2306,9 @@ def main():
         faulthandler.enable(crash_log)
     except Exception:
         pass
+    last_seen = CFG["last_version"]
+    if last_seen and version_tuple(last_seen) < (2, 5, 0):
+        CFG.data["accent"] = "Opera-Rot"      # neues Opera-Design einmalig aktivieren
     crashed = bool(CFG["running"])
     switched_safe = False
     if crashed:
