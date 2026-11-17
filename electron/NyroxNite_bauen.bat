@@ -17,7 +17,30 @@ if not errorlevel 1 (
 
 where npm >nul 2>nul
 if errorlevel 1 goto :nonode
+echo [!] Node.js ist nicht installiert - es wird jetzt direkt von nodejs.org installiert ...
+set "NODEMSI=%TEMP%\nodejs-lts.msi"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$ErrorActionPreference='Stop'; [Net.ServicePointManager]::SecurityProtocol='Tls12'; $v=(Invoke-RestMethod 'https://nodejs.org/dist/index.json' | Where-Object { $_.lts } | Select-Object -First 1).version; Write-Host ('    Lade Node.js ' + $v + ' ...'); Invoke-WebRequest ('https://nodejs.org/dist/' + $v + '/node-' + $v + '-x64.msi') -OutFile $env:NODEMSI -UseBasicParsing"
+if errorlevel 1 goto :nodemanual
+echo     Installation startet - bitte die Windows-Abfrage mit JA bestaetigen ...
+msiexec /i "%NODEMSI%" /passive /norestart
+if errorlevel 1 goto :nodemanual
+set "PATH=%ProgramFiles%\nodejs;%APPDATA%\npm;%PATH%"
+where npm >nul 2>nul
+if errorlevel 1 goto :nodemanual
+echo     Node.js ist installiert.
+echo.
 goto :hasnode
+
+:nodemanual
+echo.
+echo [!] Automatische Installation hat nicht geklappt.
+echo     Bitte Node.js LTS von https://nodejs.org installieren - die Seite oeffnet sich gleich.
+echo     Danach dieses Fenster schliessen und NyroxNite_bauen.bat erneut starten.
+start https://nodejs.org/
+pause
+exit /b 1
+
+:hasnode
 
 :nonode
 echo [!] Node.js ist nicht installiert - es wird jetzt installiert ...
