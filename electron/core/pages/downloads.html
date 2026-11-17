@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="de"><head><meta charset="utf-8"><title>Downloads</title><link rel="stylesheet" href="common.css">
+<style>.item button { opacity: 1 !important; } .item .info { color: var(--muted); font-size: 12.5px; margin-top: 3px; }</style></head>
+<body><div class="page">
+  <h1>Downloads</h1>
+  <div id="list" class="list" style="margin-top:18px"></div>
+</div>
+<script src="common.js"></script>
+<script>
+const STATES = { progressing: 'Lädt …', completed: 'Fertig', cancelled: 'Abgebrochen', interrupted: 'Unterbrochen' };
+async function load() {
+  const items = await window.nyrox.downloads();
+  const box = $('#list');
+  box.replaceChildren();
+  if (!items.length) { box.innerHTML = '<div class="empty">In dieser Sitzung wurde noch nichts heruntergeladen.</div>'; return; }
+  for (const d of items) {
+    const it = document.createElement('div');
+    it.className = 'item';
+    const p = d.total ? Math.round(d.received / d.total * 100) : 0;
+    const info = d.state === 'progressing'
+      ? `${fmtBytes(d.received)} von ${d.total ? fmtBytes(d.total) : '?'}${d.paused ? ' · pausiert' : ''}`
+      : `${STATES[d.state] || d.state} · ${fmtBytes(d.received)}`;
+    it.innerHTML = `<div class="grow"><div class="t">${esc(d.name)}</div><div class="info">${esc(info)}</div>${d.state === 'progressing' ? `<div class="bar"><div style="width:${p}%"></div></div>` : ''}</div>`;
+    const btn = (text, a, cls) => { const b = document.createElement('button'); b.textContent = text; if (cls) b.className = cls; b.onclick = async () => { await window.nyrox.downloadAct(d.id, a); load(); }; it.appendChild(b); };
+    if (d.state === 'completed') { btn('Öffnen', 'open', 'primary'); btn('Im Ordner zeigen', 'folder'); }
+    if (d.state === 'progressing') { btn(d.paused ? 'Fortsetzen' : 'Pausieren', 'pause'); btn('Abbrechen', 'cancel', 'danger'); }
+    if (d.state !== 'progressing') btn('Entfernen', 'remove');
+    box.appendChild(it);
+  }
+}
+boot(load);
+setInterval(load, 1000);
+</script></body></html>

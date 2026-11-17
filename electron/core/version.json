@@ -1,0 +1,21 @@
+{
+  "version": "3.0.0",
+  "files": [
+    "main.js",
+    "preload.js",
+    "page-preload.js",
+    "ui/index.html",
+    "ui/ui.css",
+    "ui/ui.js",
+    "ui/icons.js",
+    "pages/common.css",
+    "pages/common.js",
+    "pages/newtab.html",
+    "pages/settings.html",
+    "pages/history.html",
+    "pages/bookmarks.html",
+    "pages/downloads.html",
+    "pages/about.html",
+    "pages/error.html"
+  ]
+}

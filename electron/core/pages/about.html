@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="de"><head><meta charset="utf-8"><title>Über NyroxNite</title><link rel="stylesheet" href="common.css">
+<style>.logo { width: 72px; height: 72px; } ul { line-height: 1.8; }</style></head>
+<body><div class="page">
+  <h1><svg class="logo" viewBox="0 0 64 64"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fa1e4e"/><stop offset="1" stop-color="#7c3aed"/></linearGradient></defs><circle cx="32" cy="32" r="30" fill="url(#g)"/><path d="M32 11 L37.5 26.5 L53 32 L37.5 37.5 L32 53 L26.5 37.5 L11 32 L26.5 26.5 Z" fill="#fff"/></svg><span id="name"></span></h1>
+  <p class="muted" id="ver"></p>
+  <div class="toolbar"><button class="primary" id="upd">Nach Updates suchen</button></div>
+  <h2>Neu in Version 3.0</h2>
+  <div class="card" style="padding:4px 22px"><ul>
+    <li>Komplett neue Browser-Engine: Twitch, Netflix, Spotify, Disney+ und alle anderen Videos laufen jetzt</li>
+    <li>Design im Stil von Opera GX mit Seitenleiste und Seitenfenstern</li>
+    <li>Viel schneller und flüssiger als vorher</li>
+    <li>Einstellungen, Verlauf, Lesezeichen und Downloads als eigene Seiten</li>
+    <li>Konto mit Profilbild und Passwort-Sperre</li>
+    <li>Lesezeichen, Verlauf und Konto aus der alten Version werden übernommen</li>
+    <li>Automatische Updates auf allen PCs</li>
+  </ul></div>
+</div>
+<script src="common.js"></script>
+<script>
+boot((s) => {
+  $('#name').textContent = s.appName;
+  $('#ver').textContent = `Version ${s.version} · Chromium ${s.chrome} · Electron ${s.electron} · Widevine: ${s.widevine}`;
+});
+$('#upd').onclick = () => window.nyrox.act('check-update');
+</script></body></html>

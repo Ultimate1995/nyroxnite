@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="de"><head><meta charset="utf-8"><title>Lesezeichen</title><link rel="stylesheet" href="common.css">
+<style>.item[draggable] { cursor: grab; } .item.over { outline: 2px solid var(--accent); }</style></head>
+<body><div class="page">
+  <h1>Lesezeichen</h1>
+  <p class="muted">Ziehen zum Sortieren · Klicken zum Öffnen · Neue Lesezeichen mit Strg+D oder dem Stern in der Adressleiste</p>
+  <div class="toolbar"><input type="search" id="q" placeholder="Lesezeichen durchsuchen …"><button id="export">Exportieren</button><button id="import">Importieren</button><input type="file" id="file" accept=".json" hidden></div>
+  <div id="list" class="list"></div>
+</div>
+<script src="common.js"></script>
+<script>
+let BM = [];
+let drag = null;
+function render(s) { BM = s.cfg.bookmarks || []; draw(); }
+function draw() {
+  const q = $('#q').value.toLowerCase();
+  const box = $('#list');
+  box.replaceChildren();
+  const list = BM.filter((b) => !q || b.title.toLowerCase().includes(q) || b.url.toLowerCase().includes(q));
+  if (!list.length) { box.innerHTML = '<div class="empty">Keine Lesezeichen.</div>'; return; }
+  for (const b of list) {
+    const it = document.createElement('div');
+    it.className = 'item';
+    it.draggable = !q;
+    it.appendChild(favImg(b.url));
+    it.insertAdjacentHTML('beforeend', `<a class="grow" href="${esc(b.url)}"><div class="t">${esc(b.title)}</div><div class="u">${esc(b.url)}</div></a>`);
+    const ren = document.createElement('button'); ren.textContent = 'Umbenennen';
+    ren.onclick = () => { const t = prompt('Neuer Name:', b.title); if (t) { b.title = t; save(); } };
+    const del = document.createElement('button'); del.textContent = 'Löschen'; del.className = 'danger';
+    del.onclick = () => { BM = BM.filter((x) => x !== b); save(); };
+    it.append(ren, del);
+    it.ondragstart = () => { drag = b; };
+    it.ondragover = (e) => { e.preventDefault(); it.classList.add('over'); };
+    it.ondragleave = () => it.classList.remove('over');
+    it.ondrop = (e) => { e.preventDefault(); it.classList.remove('over'); if (!drag || drag === b) return; BM.splice(BM.indexOf(drag), 1); BM.splice(BM.indexOf(b), 0, drag); save(); };
+    box.appendChild(it);
+  }
+}
+function save() { window.nyrox.set('bookmarks', BM); draw(); }
+$('#q').addEventListener('input', draw);
+$('#export').onclick = () => {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(BM, null, 1)], { type: 'application/json' }));
+  a.download = 'lesezeichen.json'; a.click();
+};
+$('#import').onclick = () => $('#file').click();
+$('#file').onchange = async () => {
+  try {
+    const data = JSON.parse(await $('#file').files[0].text());
+    const add = data.filter((x) => x && x.url && !BM.some((b) => b.url === x.url)).map((x) => ({ title: String(x.title || x.url), url: String(x.url) }));
+    BM = BM.concat(add); save(); alert(add.length + ' Lesezeichen importiert.');
+  } catch (e) { alert('Die Datei konnte nicht gelesen werden.'); }
+};
+boot(render);
+</script></body></html>

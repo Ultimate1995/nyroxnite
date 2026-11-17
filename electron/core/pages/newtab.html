@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="de"><head><meta charset="utf-8"><title>Neuer Tab</title>
+<link rel="stylesheet" href="common.css">
+<style>
+html, body { height: 100%; overflow: hidden; }
+body { background:
+  radial-gradient(1000px 560px at 12% -10%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 60%),
+  radial-gradient(900px 600px at 110% 110%, color-mix(in srgb, #7c3aed 18%, transparent), transparent 60%), var(--bg);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.wrap { display: flex; flex-direction: column; align-items: center; width: 100%; margin-top: -6vh; animation: in .45s ease; }
+@keyframes in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.clock { font-size: 88px; font-weight: 200; letter-spacing: -2px; line-height: 1; }
+.date { color: var(--muted); font-size: 16px; margin-top: 10px; }
+.greet { font-size: 22px; font-weight: 600; margin: 24px 0 22px; }
+form { width: min(660px, 90vw); display: flex; align-items: center; background: var(--surface); border: 1px solid var(--border);
+  border-radius: 14px; padding: 6px 6px 6px 20px; box-shadow: 0 12px 40px rgba(0,0,0,.3); transition: border-color .2s, box-shadow .2s; }
+form:focus-within { border-color: var(--accent); box-shadow: 0 12px 44px color-mix(in srgb, var(--accent) 30%, transparent); }
+#q { flex: 1; border: 0; background: transparent; height: 40px; font-size: 17px; min-width: 0; outline: none; }
+#q::placeholder { color: var(--muted); }
+form button { width: 44px; height: 44px; padding: 0; border: 0; border-radius: 10px; display: grid; place-items: center;
+  background: linear-gradient(135deg, var(--accent), var(--accent2)); }
+.tiles { display: grid; grid-template-columns: repeat(auto-fill, 108px); justify-content: center; gap: 10px; width: min(720px, 92vw); margin-top: 36px; }
+.tile { display: flex; flex-direction: column; align-items: center; gap: 9px; padding: 14px 6px; border-radius: 16px; color: var(--text);
+  transition: background .15s, transform .15s; text-decoration: none !important; }
+.tile:hover { background: var(--surface); transform: translateY(-2px); }
+.ico { width: 54px; height: 54px; border-radius: 14px; background: var(--surface); border: 1px solid var(--border); display: grid; place-items: center; }
+.ico img { width: 28px; height: 28px; }
+.ico .letter { width: 30px; height: 30px; font-size: 15px; }
+.lbl { font-size: 12.5px; color: var(--muted); width: 96px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.foot { position: fixed; bottom: 14px; font-size: 12px; color: var(--muted); opacity: .7; }
+</style></head>
+<body>
+<div class="wrap">
+  <div class="clock" id="c">--:--</div>
+  <div class="date" id="d"></div>
+  <div class="greet" id="g"></div>
+  <form id="f">
+    <input id="q" autocomplete="off" spellcheck="false">
+    <button type="submit" title="Suchen"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg></button>
+  </form>
+  <div class="tiles" id="tiles"></div>
+</div>
+<div class="foot" id="foot"></div>
+<script src="common.js"></script>
+<script>
+let NAME = '';
+function tick() {
+  const n = new Date();
+  $('#c').textContent = n.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+  $('#d').textContent = n.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
+  const h = n.getHours();
+  $('#g').textContent = (h < 5 ? 'Gute Nacht' : h < 11 ? 'Guten Morgen' : h < 18 ? 'Guten Tag' : 'Guten Abend') + (NAME ? ', ' + NAME : '');
+}
+boot((s) => {
+  NAME = s.cfg.account ? s.cfg.account.name : '';
+  $('#q').placeholder = `Mit ${s.cfg.search_engine} suchen oder Adresse eingeben`;
+  $('#foot').textContent = `${s.appName} · Version ${s.version}`;
+  const box = $('#tiles');
+  box.replaceChildren();
+  for (const b of (s.cfg.bookmarks || []).slice(0, 12)) {
+    const a = document.createElement('a');
+    a.className = 'tile';
+    a.href = b.url;
+    const ico = document.createElement('div');
+    ico.className = 'ico';
+    ico.appendChild(favImg(b.url));
+    a.appendChild(ico);
+    a.insertAdjacentHTML('beforeend', `<span class="lbl">${esc(b.title)}</span>`);
+    box.appendChild(a);
+  }
+  tick();
+});
+setInterval(tick, 1000);
+$('#f').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const v = $('#q').value.trim();
+  if (v) window.nyrox.open(v, false);
+});
+</script>
+</body></html>

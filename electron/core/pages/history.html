@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="de"><head><meta charset="utf-8"><title>Verlauf</title><link rel="stylesheet" href="common.css"></head>
+<body><div class="page">
+  <h1>Verlauf</h1>
+  <div class="toolbar"><input type="search" id="q" placeholder="Verlauf durchsuchen …"><button id="clear" class="danger">Gesamten Verlauf löschen</button></div>
+  <div id="list" class="list"></div>
+</div>
+<script src="common.js"></script>
+<script>
+async function load() {
+  const items = await window.nyrox.history($('#q').value);
+  const box = $('#list');
+  box.replaceChildren();
+  if (!items.length) { box.innerHTML = '<div class="empty">Kein Verlauf gefunden.</div>'; return; }
+  let day = '';
+  for (const h of items) {
+    const d = new Date(h.time || Date.now());
+    const label = d.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    if (label !== day) { day = label; box.insertAdjacentHTML('beforeend', `<div class="day">${esc(label)}</div>`); }
+    const it = document.createElement('div');
+    it.className = 'item';
+    it.insertAdjacentHTML('beforeend', `<span class="time">${d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })}</span>`);
+    it.appendChild(favImg(h.url));
+    it.insertAdjacentHTML('beforeend', `<a class="grow" href="${esc(h.url)}"><div class="t">${esc(h.title || h.url)}</div><div class="u">${esc(hostOf(h.url))}</div></a>`);
+    const rm = document.createElement('button');
+    rm.textContent = 'Entfernen';
+    rm.onclick = async () => { await window.nyrox.deleteHistory(h.index); load(); };
+    it.appendChild(rm);
+    box.appendChild(it);
+  }
+}
+$('#q').addEventListener('input', load);
+$('#clear').onclick = async () => { if (confirm('Gesamten Verlauf löschen?')) { await window.nyrox.clearData({ history: true }); load(); } };
+boot(load);
+</script></body></html>

@@ -1,0 +1,13 @@
+{
+  "name": "nyroxnite",
+  "productName": "NyroxNite Browser",
+  "version": "3.0.0",
+  "description": "NyroxNite Browser by Tobias",
+  "author": "Tobias",
+  "main": "boot.js",
+  "private": true,
+  "devDependencies": {
+    "electron": "https://codeload.github.com/castlabs/electron-releases/tar.gz/refs/tags/v45.2.1%2Bwvcus",
+    "rcedit": "^4.0.1"
+  }
+}

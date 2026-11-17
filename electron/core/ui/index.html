@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src * data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self'">
+<title>NyroxNite Browser by Tobias</title>
+<link rel="stylesheet" href="ui.css">
+</head>
+<body>
+<div id="app">
+  <aside id="sidebar">
+    <button id="logo" class="side" title="NyroxNite-Menü"></button>
+    <div class="sep"></div>
+    <div id="sites"></div>
+    <button id="add-site" class="side" title="Aktuelle Seite zur Seitenleiste hinzufügen"></button>
+    <div class="grow"></div>
+    <div class="sep"></div>
+    <button class="side" data-act="bookmarks" data-icon="bookmark" title="Lesezeichen"></button>
+    <button class="side" data-act="history" data-icon="clock" title="Verlauf"></button>
+    <button class="side" data-act="downloads" data-icon="download" title="Downloads"></button>
+    <button class="side" data-act="settings" data-icon="settings" title="Einstellungen"></button>
+  </aside>
+
+  <section id="panel" hidden>
+    <div class="panelhead">
+      <span id="panel-title"></span>
+      <button class="nav" data-panel="reload" data-icon="reload" title="Neu laden"></button>
+      <button class="nav" data-panel="to-tab" data-icon="external" title="In neuem Tab öffnen"></button>
+      <button class="nav" data-panel="close" data-icon="x" title="Schließen"></button>
+    </div>
+    <div id="panel-content"></div>
+    <div id="panel-resizer"></div>
+  </section>
+
+  <main id="main">
+    <div id="tabstrip">
+      <div id="tabs"></div>
+      <button id="newtab" class="nav" title="Neuer Tab (Strg+T)"></button>
+      <div class="drag"></div>
+      <span id="privbadge" hidden>Privat</span>
+      <div id="wco"></div>
+    </div>
+    <div id="toolbar">
+      <button class="nav" id="btn-back" data-act="back" data-icon="back" title="Zurück (Alt+←)"></button>
+      <button class="nav" id="btn-forward" data-act="forward" data-icon="forward" title="Vor (Alt+→)"></button>
+      <button class="nav" id="btn-reload" title="Neu laden (F5)"></button>
+      <button class="nav" data-act="home" data-icon="home" title="Startseite (Alt+Pos1)"></button>
+      <div id="urlwrap">
+        <span id="urlicon"></span>
+        <input id="url" spellcheck="false" autocomplete="off" placeholder="Suchen oder Adresse eingeben">
+        <button id="zoom" class="pill" hidden title="Zoom zurücksetzen"></button>
+        <button id="star" class="nav small" title="Lesezeichen (Strg+D)"></button>
+      </div>
+      <button class="nav" id="btn-shield" title="Werbeblocker"></button>
+      <button class="nav" id="btn-dl" data-act="downloads" title="Downloads (Strg+J)"><span id="dl-ring"></span></button>
+      <button class="nav" id="btn-theme" title="Hell/Dunkel"></button>
+      <button id="account" title="Konto"></button>
+      <button class="nav" id="btn-menu" data-icon="menu" title="Menü"></button>
+    </div>
+    <div id="bookmarks"></div>
+    <div id="loadbar"><div></div></div>
+    <div id="banner" hidden>
+      <span class="bicon"></span><span id="banner-text"></span>
+      <button id="banner-btn" class="primary" hidden></button>
+      <button id="banner-close" class="ghost">Schließen</button>
+    </div>
+    <div id="findbar" hidden>
+      <input id="find" placeholder="Auf Seite suchen …" spellcheck="false">
+      <span id="find-count"></span>
+      <button class="nav" id="find-prev" data-icon="up" title="Vorheriger Treffer"></button>
+      <button class="nav" id="find-next" data-icon="down" title="Nächster Treffer"></button>
+      <label><input type="checkbox" id="find-case"> Groß-/Kleinschreibung</label>
+      <div class="grow"></div>
+      <button class="nav" id="find-close" data-icon="x" title="Schließen (Esc)"></button>
+    </div>
+    <div id="content"><div id="hover" hidden></div></div>
+  </main>
+</div>
+
+<div id="lock" hidden>
+  <div class="lockbox">
+    <div id="lock-avatar"></div>
+    <h2 id="lock-title">Willkommen zurück</h2>
+    <p class="muted">NyroxNite Browser by Tobias</p>
+    <input id="lock-pw" type="password" placeholder="Passwort">
+    <p id="lock-error" class="muted"></p>
+    <button id="lock-btn" class="primary">Anmelden</button>
+  </div>
+</div>
+
+<script src="icons.js"></script>
+<script src="ui.js"></script>
+</body>
+</html>

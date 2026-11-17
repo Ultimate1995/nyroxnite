@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="de"><head><meta charset="utf-8"><title>Einstellungen</title>
+<link rel="stylesheet" href="common.css">
+<style>
+.avatar { width: 64px; height: 64px; border-radius: 50%; overflow: hidden; display: grid; place-items: center; font-size: 28px;
+  font-weight: 700; color: #fff; flex: none; }
+.avatar img { width: 100%; height: 100%; object-fit: cover; }
+#acc-msg { min-height: 20px; margin: 6px 14px; }
+.sites .item { padding: 8px 12px; }
+nav { position: sticky; top: 0; background: var(--surface); padding: 10px 0; z-index: 2; display: flex; gap: 6px; flex-wrap: wrap; }
+nav a { padding: 6px 12px; border-radius: 8px; color: var(--muted); }
+nav a:hover { background: var(--hover); color: var(--text); text-decoration: none; }
+</style></head>
+<body>
+<div class="page">
+  <h1>Einstellungen</h1>
+  <nav><a href="#konto">Konto</a><a href="#aussehen">Aussehen</a><a href="#start">Start &amp; Suche</a><a href="#datenschutz">Datenschutz</a><a href="#leisten">Leisten</a><a href="#downloads">Downloads</a><a href="#leistung">Leistung</a><a href="#ueber">Über</a></nav>
+
+  <h2 id="konto">Konto</h2>
+  <div class="card">
+    <div class="row">
+      <div class="avatar" id="avatar"></div>
+      <div class="grow">
+        <div class="label" id="acc-title">Konto erstellen</div>
+        <div class="desc">Dein Konto wird nur auf diesem PC gespeichert. Mit einem Passwort kannst du den Browser sperren.</div>
+      </div>
+      <button id="pick-avatar">Profilbild wählen …</button>
+    </div>
+    <div class="row"><div class="grow"><div class="label">Name</div></div><input type="text" id="acc-name" placeholder="Dein Name" maxlength="40"></div>
+    <div class="row"><div class="grow"><div class="label">Passwort</div><div class="desc" id="pw-desc">Optional, mindestens 4 Zeichen</div></div>
+      <input type="password" id="acc-pw" placeholder="Passwort"></div>
+    <div class="row"><div class="grow"></div><input type="password" id="acc-pw2" placeholder="Passwort wiederholen"></div>
+    <div class="row" id="rm-row" hidden><div class="grow"><div class="label">Passwort entfernen</div></div><label class="switch"><input type="checkbox" id="acc-rm"><span></span></label></div>
+    <div class="row"><div class="grow muted" id="acc-msg"></div>
+      <button class="danger" id="acc-delete" hidden>Konto löschen</button>
+      <button class="primary" id="acc-save">Konto erstellen</button></div>
+  </div>
+
+  <h2 id="aussehen">Aussehen</h2>
+  <div class="card">
+    <div class="row"><div class="grow"><div class="label">Dunkles Design</div></div><label class="switch"><input type="checkbox" data-key="dark_mode"><span></span></label></div>
+    <div class="row"><div class="grow"><div class="label">Akzentfarbe</div></div><select data-key="accent" id="accent"></select></div>
+  </div>
+
+  <h2 id="start">Start &amp; Suche</h2>
+  <div class="card">
+    <div class="row"><div class="grow"><div class="label">Startseite</div><div class="desc">Leer lassen für die NyroxNite-Startseite</div></div><input type="text" data-key="homepage" placeholder="z. B. google.de"></div>
+    <div class="row"><div class="grow"><div class="label">Suchmaschine</div></div><select data-key="search_engine" id="engine"></select></div>
+    <div class="row"><div class="grow"><div class="label">Letzte Sitzung wiederherstellen</div><div class="desc">Beim Start die zuletzt offenen Tabs öffnen</div></div><label class="switch"><input type="checkbox" data-key="restore_session"><span></span></label></div>
+  </div>
+
+  <h2 id="datenschutz">Datenschutz</h2>
+  <div class="card">
+    <div class="row"><div class="grow"><div class="label">Werbung blockieren</div></div><label class="switch"><input type="checkbox" data-key="adblock"><span></span></label></div>
+    <div class="row"><div class="grow"><div class="label">Pop-up-Fenster blockieren</div><div class="desc">Kann Anmeldungen mit Google, Discord usw. stören</div></div><label class="switch"><input type="checkbox" data-key="block_popups"><span></span></label></div>
+    <div class="row"><div class="grow"><div class="label">Browserdaten löschen</div><div class="desc">Verlauf, Cookies und Cache</div></div>
+      <button id="clear-history">Verlauf</button><button id="clear-cookies">Cookies</button><button id="clear-cache">Cache</button></div>
+  </div>
+
+  <h2 id="leisten">Leisten</h2>
+  <div class="card">
+    <div class="row"><div class="grow"><div class="label">Seitenleiste anzeigen</div><div class="desc">Strg+Shift+S</div></div><label class="switch"><input type="checkbox" data-key="show_sidebar"><span></span></label></div>
+    <div class="row"><div class="grow"><div class="label">Lesezeichenleiste anzeigen</div><div class="desc">Strg+Shift+B</div></div><label class="switch"><input type="checkbox" data-key="show_bookmarks"><span></span></label></div>
+    <div class="row" style="display:block"><div class="label">Seiten in der Seitenleiste</div>
+      <div class="desc">Neue Seiten fügst du mit dem + in der Seitenleiste hinzu.</div>
+      <div class="list sites" id="sites" style="margin-top:8px"></div></div>
+  </div>
+
+  <h2 id="downloads">Downloads</h2>
+  <div class="card">
+    <div class="row"><div class="grow"><div class="label">Speicherort</div><div class="desc" id="dl-dir"></div></div><button id="pick-dir">Ändern</button></div>
+    <div class="row"><div class="grow"><div class="label">Vor jedem Download fragen, wo gespeichert werden soll</div></div><label class="switch"><input type="checkbox" data-key="ask_download"><span></span></label></div>
+  </div>
+
+  <h2 id="leistung">Leistung</h2>
+  <div class="card">
+    <div class="row"><div class="grow"><div class="label">Hardwarebeschleunigung</div><div class="desc">Aus = stabiler, aber langsamer (Neustart nötig)</div></div><label class="switch"><input type="checkbox" data-key="hardware_accel"><span></span></label></div>
+    <div class="row"><div class="grow"><div class="label">Inaktive Tabs schlafen legen</div><div class="desc">Tabs, die 30 Minuten nicht benutzt wurden, werden entladen</div></div><label class="switch"><input type="checkbox" data-key="sleep_tabs"><span></span></label></div>
+  </div>
+
+  <h2 id="ueber">Über</h2>
+  <div class="card">
+    <div class="row"><div class="grow"><div class="label" id="about-name"></div><div class="desc" id="about-ver"></div></div>
+      <button id="check-update">Nach Updates suchen</button></div>
+  </div>
+</div>
+<script src="common.js"></script>
+<script>
+let S = null;
+function render(s) {
+  S = s;
+  const c = s.cfg;
+  for (const el of document.querySelectorAll('[data-key]')) {
+    if (document.activeElement === el) continue;
+    if (el.type === 'checkbox') el.checked = !!c[el.dataset.key];
+    else if (el.tagName !== 'SELECT') el.value = c[el.dataset.key] || '';
+  }
+  $('#accent').innerHTML = c.accents.map((a) => `<option ${a === c.accent ? 'selected' : ''}>${esc(a)}</option>`).join('');
+  $('#engine').innerHTML = c.engines.map((a) => `<option ${a === c.search_engine ? 'selected' : ''}>${esc(a)}</option>`).join('');
+  $('#dl-dir').textContent = c.download_dir;
+  // Konto
+  const acc = c.account;
+  const av = $('#avatar');
+  av.innerHTML = s.avatar ? `<img src="${s.avatar}" alt="">` : esc(((acc && acc.name) || '?').charAt(0).toUpperCase());
+  av.style.background = s.avatar ? 'none' : ((acc && acc.color) || 'var(--accent)');
+  $('#acc-title').textContent = acc ? `Angemeldet als ${acc.name}` : 'Konto erstellen';
+  if (document.activeElement !== $('#acc-name')) $('#acc-name').value = acc ? acc.name : '';
+  $('#acc-save').textContent = acc ? 'Speichern' : 'Konto erstellen';
+  $('#acc-delete').hidden = !acc;
+  $('#rm-row').hidden = !(acc && acc.hasPw);
+  $('#pw-desc').textContent = acc && acc.hasPw ? 'Leer lassen = unverändert' : 'Optional, mindestens 4 Zeichen';
+  // Seitenleiste
+  const box = $('#sites');
+  box.replaceChildren();
+  for (const site of c.sidebar || []) {
+    const it = document.createElement('div');
+    it.className = 'item';
+    it.appendChild(favImg(site.url));
+    it.insertAdjacentHTML('beforeend', `<div class="grow"><div class="t">${esc(site.title)}</div><div class="u">${esc(site.url)}</div></div>`);
+    const rm = document.createElement('button');
+    rm.textContent = 'Entfernen';
+    rm.onclick = () => window.nyrox.set('sidebar', c.sidebar.filter((x) => x.url !== site.url));
+    it.appendChild(rm);
+    box.appendChild(it);
+  }
+  $('#about-name').textContent = s.appName;
+  $('#about-ver').textContent = `Version ${s.version} · Chromium ${s.chrome} · Electron ${s.electron} · Widevine (Netflix & Co.): ${s.widevine}`;
+}
+for (const el of document.querySelectorAll('[data-key]')) {
+  el.addEventListener('change', () => window.nyrox.set(el.dataset.key, el.type === 'checkbox' ? el.checked : el.value.trim()));
+}
+$('#pick-dir').onclick = async () => { const d = await window.nyrox.pickFolder(); if (d) window.nyrox.set('download_dir', d); };
+$('#pick-avatar').onclick = () => window.nyrox.pickAvatar();
+$('#acc-save').onclick = async () => {
+  const pw = $('#acc-pw').value; const pw2 = $('#acc-pw2').value;
+  if (pw !== pw2) { $('#acc-msg').textContent = 'Die Passwörter stimmen nicht überein.'; return; }
+  const r = await window.nyrox.saveAccount({ name: $('#acc-name').value, password: pw, removePassword: $('#acc-rm').checked });
+  $('#acc-msg').textContent = r.ok ? 'Gespeichert ✓' : r.error;
+  if (r.ok) { $('#acc-pw').value = ''; $('#acc-pw2').value = ''; $('#acc-rm').checked = false; }
+};
+$('#acc-delete').onclick = async () => {
+  if (confirm('Konto wirklich löschen? Lesezeichen und Verlauf bleiben erhalten.')) await window.nyrox.deleteAccount();
+};
+const clear = (what, msg) => async () => { if (confirm(msg)) { await window.nyrox.clearData(what); alert('Erledigt.'); } };
+$('#clear-history').onclick = clear({ history: true }, 'Gesamten Verlauf löschen?');
+$('#clear-cookies').onclick = clear({ cookies: true }, 'Alle Cookies und Website-Daten löschen? Du wirst überall abgemeldet.');
+$('#clear-cache').onclick = clear({ cache: true }, 'Cache leeren?');
+$('#check-update').onclick = () => window.nyrox.act('check-update');
+boot(render);
+</script>
+</body></html>
