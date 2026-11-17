@@ -1,4 +1,4 @@
-# NyroxNite by Tobias
+# NyroxNite Browser by Tobias
 
 Ein moderner Desktop-Browser auf Basis von Chromium (PyQt6 + QtWebEngine).
 

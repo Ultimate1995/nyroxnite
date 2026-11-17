@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-NyroxNite by Tobias – moderner Desktop-Browser auf Basis von Chromium (QtWebEngine).
+NyroxNite Browser by Tobias – moderner Desktop-Browser auf Basis von Chromium (QtWebEngine).
 
 Start:   python browser.py      (oder NyroxNite.exe nach dem Bauen)
 Pakete:  pip install PyQt6 PyQt6-WebEngine
@@ -10,8 +10,11 @@ Updater: Die EXE lädt diese Datei bei jedem Start neu. Wird browser.py verände
          offene Tabs bleiben dabei erhalten.
 """
 
-VERSION = "2.6.0"
+VERSION = "2.6.1"
 CHANGELOG = {
+    "2.6.1": [
+        "Neuer Name: NyroxNite Browser by Tobias",
+    ],
     "2.6.0": [
         "Schneller: Tabs im Hintergrund schlafen nach 5 Minuten (spart CPU und Arbeitsspeicher)",
         "Kein Ruckeln mehr durch Speichern oder Update-Prüfung während des Surfens",
@@ -86,7 +89,7 @@ UPDATE_INTERVAL_MIN = 30
 
 # ====================================================================== Pfade
 APP_NAME = "NyroxNite"
-APP_FULL = "NyroxNite by Tobias"
+APP_FULL = "NyroxNite Browser by Tobias"
 APP_FILE = Path(__file__).resolve()
 try:
     START_HASH = hashlib.sha1(APP_FILE.read_bytes()).hexdigest()
@@ -1771,7 +1774,7 @@ class BrowserWindow(QMainWindow):
             ("Einstellungen", "Ctrl+,", lambda: SettingsDialog(self).exec()),
             ("Nach Updates suchen", None, lambda: UPDATER and UPDATER.check_online(True)),
             ("Neuigkeiten", None, lambda: show_changelog(self)),
-            ("Über NyroxNite", None, self.about),
+            ("Über NyroxNite Browser", None, self.about),
             ("Beenden", "Ctrl+Q", QApplication.quit),
         ]
         for it in items:
@@ -1895,9 +1898,9 @@ class BrowserWindow(QMainWindow):
 
     def about(self):
         box = QMessageBox(self)
-        box.setWindowTitle("Über NyroxNite")
+        box.setWindowTitle("Über NyroxNite Browser")
         box.setIconPixmap(logo_icon().pixmap(64, 64))
-        box.setText(f"<h2 style='margin:0'>NyroxNite</h2><p style='margin:2px 0 0 0'>by Tobias</p><p>Version {VERSION}</p>"
+        box.setText(f"<h2 style='margin:0'>NyroxNite Browser</h2><p style='margin:2px 0 0 0'>by Tobias</p><p>Version {VERSION}</p>"
                     f"<p>Chromium-basierter Browser mit PyQt6.</p>"
                     f"<p style='color:gray'>Programmdatei: {html.escape(str(APP_FILE))}<br>"
                     f"Daten: {html.escape(str(DATA_DIR))}</p>")
